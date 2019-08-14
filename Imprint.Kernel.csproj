@@ -7,7 +7,7 @@
     <ProjectGuid>{F7004667-5250-4A2B-9B31-AA71F31FAF57}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>Imprint.Kernel</RootNamespace>
+    <RootNamespace>Imprint</RootNamespace>
     <AssemblyName>Imprint.Kernel</AssemblyName>
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
@@ -97,8 +97,11 @@
     <Compile Include="Imaging\EffImage.cs" />
     <Compile Include="Imaging\Filter.cs" />
     <Compile Include="Network\Browser.cs" />
-    <Compile Include="Network\GzipHandler.cs" />
+    <Compile Include="Network\Handler\GzipHandler.cs" />
     <Compile Include="Network\Handler.cs" />
+    <Compile Include="Network\Handler\JsonHandler.cs" />
+    <Compile Include="Network\Handler\PlainTextHandler.cs" />
+    <Compile Include="Network\Handler\RawHandler.cs" />
     <Compile Include="Network\Redial\GeeRouter.cs" />
     <Compile Include="Network\Redial\Tor.cs" />
     <Compile Include="Network\UserAgent.cs" />
