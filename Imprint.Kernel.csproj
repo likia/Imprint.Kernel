@@ -91,9 +91,9 @@
     <Compile Include="Core\SaveManager.cs" />
     <Compile Include="Core\SettingManager.cs" />
     <Compile Include="Core\Storage.cs" />
-    <Compile Include="DB\ConnectionPool.cs" />
-    <Compile Include="DB\Entity.cs" />
-    <Compile Include="DB\Repository.cs" />
+    <Compile Include="Db\Pool\ConnectionPool.cs" />
+    <Compile Include="Db\Pool\IConnector.cs" />
+    <Compile Include="Db\Pool\MySQLConnector.cs" />
     <Compile Include="Imaging\EffImage.cs" />
     <Compile Include="Imaging\Filter.cs" />
     <Compile Include="Network\Browser.cs" />
