@@ -11,6 +11,8 @@
     * ResourceManager 全局资源管理器
     * SaveManager 全局序列化管理器
     * SettingManager 全局设置管理器
+* Db 数据库模块
+    * Pool 连接池相关
 * Imaging 图像处理
     * EffImage 高效图片处理类， 用指针直接读取位图数据，更快操作图像像素数据，并封装了多种常用的验证码处理方法如卷积滤镜，二值化，灰度化
 * Network 网络模块
