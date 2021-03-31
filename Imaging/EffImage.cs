@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Threading.Tasks;
 
 namespace Imprint.Imaging
 {
@@ -249,10 +250,15 @@ namespace Imprint.Imaging
 
         /// <summary>
         /// 每个像素进行处理
+        /// 
+        /// TODO: 根据图片大小自动选择是否并行
+        /// TODO2: 并行的同时是否也可以并发多线程处理？
+        /// 
         /// </summary>
         /// <param name="proc">回调</param>
         /// <param name="linefirst">是否一行一行遍历</param>
-        public void ProcessEach(CustomProc proc, bool linefirst = true)
+        /// <param name="parallel">是否并行， 发挥多核cpu性能， 适合大图片， 小图片反而增加开销</param>
+        public void ProcessEach(CustomProc proc, bool linefirst = true, bool parallel = false)
         {
             int fstLim = 0, lstLim = 0;
 
@@ -266,12 +272,24 @@ namespace Imprint.Imaging
                 fstLim = height;
                 lstLim = width;
             }
-
-            for (int i = 0; i < fstLim; i++)
-                for (int j = 0; j < lstLim; j++)
+            if (parallel)
+            {
+                Parallel.For(0, fstLim, (i) =>
                 {
-                    proc(this, i, j);
-                }
+                    Parallel.For(0, lstLim, (j) =>
+                    {
+                        proc(this, i, j);
+                    });
+                });
+            }
+            else
+            {
+                for (int i = 0; i < fstLim; i++)
+                    for (int j = 0; j < lstLim; j++)
+                    {
+                        proc(this, i, j);
+                    }
+            }
         }
 
 

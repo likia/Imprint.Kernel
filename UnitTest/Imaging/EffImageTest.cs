@@ -51,6 +51,46 @@ namespace UnitTest.Imaging
             Assert.AreEqual(100, maxCount);
         }
 
+        // 1000w像素图片 i3测试 1s， 并行850ms
+        [TestMethod]
+        public void TestBinaryWithNoParallel()
+        {
+            var img = new EffImage((Bitmap)Bitmap.FromFile("z:/test.jpg"));
+            var th = 50;
+            
+            for (int i = 0; i < img.Width; i++)
+            {
+                for (int j = 0; j < img.Height; j++)
+                {
+                    // 直接操作pixel数据， 快一丢丢
+                    var c = img.Pixels[i, j];
+                    if (c.R < th)
+                    {
+                        img.Pixels[i, j] = Color.Black;
+                    }
+                    else
+                    {
+                        img.Pixels[i, j] = Color.White;
+                    }
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestBinaryWithParallel()
+        {
+            var img = new EffImage((Bitmap)Bitmap.FromFile("z:/test.jpg"));
+            // 多核并行
+            img.ProcessEach((EffImage x, int i, int j) =>
+            {
+                var c = x.At(i, j);
+                if (c.R < 50)
+                    x.Set(i, j, Color.Black);
+                else
+                    x.Set(i, j, Color.White);
+
+            }, parallel: true);
+        }
 
         [TestMethod]
         public void TestOCR()
