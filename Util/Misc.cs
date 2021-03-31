@@ -20,117 +20,6 @@ namespace Imprint.Util
         }
     }
 
-    public static class Information
-    {
-        public static string Version()
-        {
-            return "2.1.1";
-        }
-    }
-
-    public interface JammerMaker
-    {
-        string Get(int Count);
-        string GetSingle();
-    }
-
-    public class JammerElement
-    {
-        public int RangeStart;
-        public int RangeEnd;
-        public int ASCIIStart;
-    }
-    public class FixedJammer : JammerMaker
-    {
-        string[] Rows;
-
-        public FixedJammer(string FileName)
-        {
-            string Content = Algorithm.LoadText(FileName);
-            if (Content == null) return;
-            Rows = StrHelper.Explode("\n", Content);
-        }
-
-        public string Get(int Count)
-        {
-            return GetSingle();
-        }
-
-        public string GetSingle()
-        {
-            if (Rows == null || Rows.Length == 0) return null;
-            return Rows[Algorithm.Rand() % Rows.Length];
-        }
-    }
-    public class LyricsJammer : CharJammer
-    {
-        string LyricsText = "";
-
-
-        public void AddElements(string Chars)
-        {
-            LyricsText += Chars;
-        }
-        public override string Get(int Length)
-        {
-            int pos = new Random().Next(0, LyricsText.Length - Length);
-            string rtn = LyricsText.Substring(pos, Length);
-            return rtn;
-        }
-    }
-    public class CharJammer : JammerMaker
-    {
-        private List<JammerElement> Elements;
-        private int RangeCapacity;
-
-        public CharJammer()
-        {
-            RangeCapacity = 0;
-            Elements = new List<JammerElement>(255);
-        }
-
-        public virtual void AddRange(int Start, int End)
-        {
-            JammerElement NewElement = new JammerElement();
-            NewElement.RangeStart = RangeCapacity;
-            RangeCapacity += End - Start + 1;
-            NewElement.RangeEnd = RangeCapacity - 1;
-            NewElement.ASCIIStart = Start;
-            Elements.Add(NewElement);
-        }
-
-        public virtual void AddElements(char[] Chars)
-        {
-            for (int i = 0; i < Chars.Length; i++)
-            {
-                AddRange((int)Chars[i], (int)Chars[i]);
-            }
-        }
-
-        public string GetSingle()
-        {
-            if (RangeCapacity == 0) return null;
-            int Position = Algorithm.Rand() % RangeCapacity;
-            for (int i = 0; i < Elements.Count; i++)
-            {
-                if (Elements[i].RangeStart <= Position && Elements[i].RangeEnd >= Position)
-                {
-                    return ((char)(Elements[i].ASCIIStart + (Position - Elements[i].RangeStart))).ToString();
-                }
-            }
-            return null;
-        }
-
-        public virtual string Get(int Length)
-        {
-            string Mix = "";
-            for (int i = 0; i < Length; i++)
-            {
-                Mix += GetSingle();
-            }
-            return Mix;
-        }
-    }
     public static class Url
     {
         private static bool IsSafe(char ch)
@@ -267,75 +156,7 @@ namespace Imprint.Util
 
     public static class Algorithm
     {
-        public static readonly byte[] _md5_padding_header = new byte[8] { 0x0A, 0x0f, 0x1d, 0xcf, 0x9e, 0x3b, 0xce, 0x48 };
-        public static readonly byte[] _md5_padding_tail = new byte[8] { 0xAd, 0xb1, 0x33, 0x12, 0x25, 0x99, 0x7e, 0x2b };
-
-        public static bool BytesEqual(byte[] buf1, byte[] buf2)
-        {
-            if (buf1.Length == buf2.Length)
-            {
-                for (int i = 0; i < buf1.Length; i++)
-                {
-                    if (!buf1[i].Equals(buf2[i]))
-                        return false;
-                }
-                return true;
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// 自制分块异或加密
-        /// </summary>
-        public class Crypt
-        {
-            private byte[] mKey = { 0x7d, 0xff, 0x0d, 0x0a, 0x66, 0x12, 0x35, 0x67, 0x98, 0xfa, 0x9f, 0xfb, 0xba, 0x8c, 0xcc, 0x1a };
-            private long nGourp = 6184;
-            private string SALT = "-=)(*&^%$%$%!@,></><][{}{\":|.-*/;'][+->.<;.s49(*^][:;/.,+-=*()(&^$%$#";
-            private int P = 256;
-
-            private void ChangeKey()
-            {
-                mKey = Algorithm.MD5(Encoding.UTF8.GetBytes(BitConverter.ToString(mKey).Replace("-", "").ToUpper() + SALT + nGourp.ToString()));
-                nGourp++;
-            }
-            public byte[] Encrypt(byte[] src)
-            {
-                List<byte> rtn = new List<byte>();
-                for (int i = 0; i < src.Length; i++)
-                {
-                    if (i % P == 0) ChangeKey();
-                    rtn.Add((byte)(src[i] ^ mKey[i % 16]));
-                }
-                return rtn.ToArray();
-            }
-            public byte[] Decrypt(byte[] enc)
-            {
-                List<byte> rtn = new List<byte>();
-                for (int i = 0; i < enc.Length; i++)
-                {
-                    if (i % P == 0) ChangeKey();
-                    rtn.Add((byte)(enc[i] ^ mKey[i % 16]));
-                }
-                return rtn.ToArray();
-            }
-        }
-
-
-        static private Random Seed = null;
-        static object RndLock = new object();
-        static public int Rand()
-        {
-            lock (RndLock)
-            {
-                if (Seed == null)
-                {
-                    Seed = new Random((int)((DateTime.Now - new DateTime(1970, 1, 1, 8, 0, 0)).TotalSeconds) / (DateTime.Now.Millisecond + 1));
-                    System.Threading.Thread.Sleep(Seed.Next(1, 65));
-                }
-                return Seed.Next();
-            }
-        }
+      
         public static byte[] MD5(byte[] src)
         {
             MD5CryptoServiceProvider md5 = new MD5CryptoServiceProvider();
@@ -351,6 +172,10 @@ namespace Imprint.Util
             return System.BitConverter.ToString(mdByte).Replace("-", "").ToLower();
         }
 
+        /// <summary>
+        /// 机器码
+        /// </summary>
+        /// <returns></returns>
         static public string HardwareID()
         {
             string HID = "";
@@ -394,15 +219,6 @@ namespace Imprint.Util
             {
                 return "";
             }
-        }//end method
-        public static string LoadText(string FileName)
-        {
-            if (System.IO.File.Exists(FileName) == false) return null;
-            System.IO.StreamReader SReader = new System.IO.StreamReader(FileName);
-            string Content = SReader.ReadToEnd();
-            SReader.Close();
-            SReader.Dispose();
-            return Content;
         }
 
         public static List<ConfigRow> GetConfigRow(string Text)
@@ -472,7 +288,7 @@ namespace Imprint.Util
 
         public static List<ConfigRow> ParseConfig(string FileName)
         {
-            string Text = LoadText(FileName);
+            string Text = File.ReadAllText(FileName);
             if (Text == null) return null;
             List<ConfigRow> Rows = new List<ConfigRow>();
             string[] Lines = StrHelper.Explode("\n", Text);
@@ -496,6 +312,10 @@ namespace Imprint.Util
             return Rows;
         }
 
+        /// <summary>
+        /// unix时间戳
+        /// </summary>
+        /// <returns></returns>
         public static int TimeStamp()
         {
             return (int)((DateTime.Now - new DateTime(1970, 1, 1, 8, 0, 0)).TotalSeconds);

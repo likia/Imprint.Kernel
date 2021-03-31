@@ -8,101 +8,76 @@ using System.Drawing.Imaging;
 
 namespace Imprint.Imaging
 {
-    public delegate bool CustomCaseProc(EffImage sender,int srcx,int srcy);
-    public delegate void CustomProc(EffImage sender,int srcx,int srcy);
+    public delegate bool CustomCaseProc(EffImage sender, int srcx, int srcy);
+    public delegate void CustomProc(EffImage sender, int srcx, int srcy);
 
+    public enum ImageColorType
+    {
+        // 二值图
+        Binary,
+        // 灰度图
+        GrayScale,
+        // 彩图 (三通道
+        Colored,
+    }
 
     /// <summary>
     /// 高性能验证码图像处理类
     /// </summary>
-    public class EffImage
+    public partial class EffImage : IDisposable
     {
         /// <summary>
-        /// Laplacian边缘提取
+        /// 宽高
         /// </summary>
-        public static double[,] Laplacian3x3 = new double[,]
-        {         { -1, -1, -1,  },
-                  { -1,  8, -1,  },
-                  { -1, -1, -1,  }, };
-        /// <summary>
-        /// 创建全白图片
-        /// </summary>
-        /// <param name="w">宽</param>
-        /// <param name="h">高</param>
-        /// <returns></returns>
-        public static EffImage White(int w,int h)
-        {
-            Bitmap rt = new Bitmap(w,h);
-            Graphics g = Graphics.FromImage(rt);
-            g.Clear(Color.White);
-            return new EffImage(rt);
-        }
-        /// <summary>
-        /// EffImage填充边距
-        /// </summary>
-        /// <param name="src">源图</param>
-        /// <param name="w">目标宽</param>
-        /// <param name="h">目标高</param>
-        /// <returns></returns>
-        public static EffImage Padding(EffImage src, int w, int h)
-        {
-            return new EffImage(Padding(src.Origin, w, h));
-        }
-        /// <summary>
-        /// 位图填充
-        /// </summary>
-        /// <param name="src">原图</param>
-        /// <param name="w">目标宽</param>
-        /// <param name="h">目标高</param>
-        /// <returns></returns>
-        public static Bitmap Padding(Bitmap src,int w,int h)
-        {
-            var eimg = new EffImage(src);
-            Bitmap rt = new Bitmap(w, h);
-            Graphics g = Graphics.FromImage(rt);
-            g.Clear(Color.White);
-            int left = eimg.Left;
-            int right = eimg.Right;
-            int top = eimg.Top;
-            int bot = eimg.Bottom;
-            int pwid =right - left ;
-            int phei = bot - top ;
-            int padleft = (w - pwid) / 2 -1;
-            int padright = (h - phei) / 2 -1;
-            var sr = CutV(CutH(eimg, left, right), top, bot);
-            g.DrawImage(sr.Origin, new Point(padleft, padright));
-            g.Save();
-            g.Dispose();
-            return rt;
-        }
-        /// <summary>
-        /// 缩放
-        /// </summary>
-        /// <param name="img"></param>
-        /// <param name="w">目标宽</param>
-        /// <param name="h">目标高</param>
-        /// <returns></returns>
-        public static EffImage Resize(EffImage img, int w, int h)
-        {
-            Bitmap bmp = new Bitmap(w, h);
-            Graphics g = Graphics.FromImage(bmp);
-            g.Clear(Color.White);
-            var src = img.Origin;
+        private int width, height;
 
-            g.DrawImage(src,
-                new Rectangle(0, 0, w, h),
-                new Rectangle(0, 0, img.width, img.height)
-                , GraphicsUnit.Pixel);
+        /// <summary>
+        /// 像素数据
+        /// </summary>
+        private Color[,] pixels;
 
-            var rt = new EffImage(bmp);
+        /// <summary>
+        /// 颜色类型
+        /// </summary>
+        private ImageColorType imageColorType;
 
-            src.Dispose();
-            bmp.Dispose();
-            return rt;
+        /// <summary>
+        /// 前景门限颜色值
+        /// </summary>
+        private Color foregroundThreshold;
+
+        /// <summary>
+        /// 判断是否是前景值
+        /// </summary>
+        /// <param name="color"></param>
+        /// <returns></returns>
+        private bool isForeground(Color color)
+        {
+            switch(imageColorType)
+            {
+                case ImageColorType.Binary:
+                case ImageColorType.GrayScale:
+                    return color.R <= foregroundThreshold.R;
+                case ImageColorType.Colored:
+                    return color.R <= foregroundThreshold.R &&
+                           color.G <= foregroundThreshold.G &&
+                           color.B <= foregroundThreshold.B;
+            }
+            return false;
         }
+
+        public Color[,] Pixels
+        {
+            get
+            {
+                return pixels;
+            }
+        }
+
+
+
         /// <summary>
         /// 非背景左X坐标
-        /// TODO: 前景阀值
         /// </summary>
         public int Left
         {
@@ -112,7 +87,7 @@ namespace Imprint.Imaging
                 {
                     for (int j = 0; j < height; j++)
                     {
-                        if (At(i, j).R < 50)
+                        if (isForeground(At(i, j)))
                         {
                             return i;
                         }
@@ -121,23 +96,25 @@ namespace Imprint.Imaging
                 return -1;
             }
         }
-        private bool checkBoundary(int x,int y)
-        {
-            if (x < 0 || x >= width || y < 0 || y >= height) return false;
-            return true;
-        }
-        
+
+
         /// <summary>
         /// 前景区域
-        /// TODO: 前景阀值
         /// </summary>
         public EffImage ValidArea
         {
             get
             {
-                var re = checkBoundary(Left -1, Top - 1);
+                bool checkBoundary(int x, int y)
+                {
+                    if (x < 0 || x >= width || y < 0 || y >= height) return false;
+                    return true;
+                }
+
+
+                var re = checkBoundary(Left - 1, Top - 1);
                 var re2 = checkBoundary(Right + 1, Bottom + 1);
-               
+
                 if (re && re2)
                 {
                     // not out of range
@@ -145,7 +122,7 @@ namespace Imprint.Imaging
                 }
                 else
                 {
-                    return CutH(CutV(this, Top, Bottom), Left, Right);    
+                    return CutH(CutV(this, Top, Bottom), Left, Right);
                 }
             }
         }
@@ -160,14 +137,14 @@ namespace Imprint.Imaging
                 {
                     for (int j = height - 1; j >= 0; j--)
                     {
-                        if (At(i, j).R < 50)
+                        if (isForeground(At(i, j)))
                         {
                             return i;
                         }
                     }
                 }
                 return -1;
-                
+
             }
         }
         /// <summary>
@@ -181,7 +158,7 @@ namespace Imprint.Imaging
                 {
                     for (int i = 0; i < width; i++)
                     {
-                        if (At(i, j).R < 50)
+                        if (isForeground(At(i, j)))
                         {
                             return j;
                         }
@@ -218,10 +195,7 @@ namespace Imprint.Imaging
                 }
         }
 
-        byte[] getBuf(string str)
-        {
-            return Encoding.Default.GetBytes(str);
-        }
+
         /// <summary>
         /// 前景下Y坐标
         /// </summary>
@@ -233,7 +207,7 @@ namespace Imprint.Imaging
                 {
                     for (int i = width - 1; i >= 0; i--)
                     {
-                        if (At(i, j).R < 50)
+                        if (isForeground(At(i, j)))
                         {
                             return j;
                         }
@@ -244,24 +218,14 @@ namespace Imprint.Imaging
         }
 
         /// <summary>
-        /// 宽高
-        /// </summary>
-        private int width, height;
-
-        /// <summary>
-        /// 像素数据
-        /// </summary>
-        private Color[,] pixels;
-
-
-        /// <summary>
         /// 高
         /// </summary>
         public int Height
         {
             get { return height; }
-            
+
         }
+
         /// <summary>
         /// 宽
         /// </summary>
@@ -269,6 +233,7 @@ namespace Imprint.Imaging
         {
             get { return width; }
         }
+
         /// <summary>
         /// 前景大小
         /// </summary>
@@ -279,31 +244,8 @@ namespace Imprint.Imaging
                 return new Size(Right - Left, Bottom - Top);
             }
         }
-        /// <summary>
-        /// 切割图片 X坐标
-        /// </summary>
-        /// <param name="x">图片</param>
-        /// <param name="s">X开始坐标</param>
-        /// <param name="e">X结束坐标</param>
-        /// <returns></returns>
-        public static EffImage CutH(EffImage x, int s, int e)
-        {
-            if (e - s <= 0) return null;
-            if (s > 1) s -= 1;
-            if (e < x.Width-1) e += 1;
 
-            EffImage rt = White(e - s, x.Height);
 
-            for (int i = s; i < e; i++)
-            {
-                for (int j = 0; j < x.Height; j++)
-                {
-                    rt.Set
-                     (i - s, j, x.At(i, j));
-                }
-            }
-            return rt;
-        }
         /// <summary>
         /// 旋转图片
         /// </summary>
@@ -312,7 +254,7 @@ namespace Imprint.Imaging
         public EffImage Rotate(int degree)
         {
             EffImage rtImg = White(Width, Height);
-            var org = EffImage.CutV(EffImage.CutH(this, Left, Right), Top, Bottom);
+            var org = CutV(CutH(this, Left, Right), Top, Bottom);
             var bmp = org.Origin;
             var rwid = (org.width + org.height) * 2;
             Bitmap r = new Bitmap(rwid, rwid);
@@ -323,29 +265,7 @@ namespace Imprint.Imaging
             g.DrawImage(bmp, new Point((rwid / 2) - (org.width / 2), (rwid / 2) - (org.height / 2)));
             return new EffImage(r).ValidArea;
         }
-        /// <summary>
-        /// Y方向切割图片
-        /// </summary>
-        /// <param name="x"></param>
-        /// <param name="s"></param>
-        /// <param name="e"></param>
-        /// <returns></returns>
-        public static EffImage CutV(EffImage x, int s, int e)
-        {
-            if (e - s <= 0) return null;
-            if (s > 1) s -= 1;
-            if (e < x.Height - 1) e += 1;
 
-            EffImage rt = White(x.Width, e - s);
-            for (int j = s; j < e; j++)
-            {
-                for (int i = 0; i < x.Width; i++)
-                {
-                    rt.Set(i, j - s, x.At(i, j));
-                }
-            }
-            return rt ;
-        }
         /// <summary>
         /// 相当于GetPixel
         /// </summary>
@@ -354,7 +274,8 @@ namespace Imprint.Imaging
         /// <returns></returns>
         public Color At(int x, int y)
         {
-            if (x >= width || x < 0 || y >= height || y < 0) return Color.White;
+            if (x >= width || x < 0 || y >= height || y < 0) 
+                return Color.White;
 
             return pixels[x, y];
         }
@@ -365,7 +286,7 @@ namespace Imprint.Imaging
         /// <param name="x"></param>
         /// <param name="y"></param>
         /// <param name="c"></param>
-        public void Set(int x, int y,Color c)
+        public void Set(int x, int y, Color c)
         {
             pixels[x, y] = c;
         }
@@ -376,11 +297,13 @@ namespace Imprint.Imaging
         /// </summary>
         public void GrayScale()
         {
-            ProcessEach((CustomProc)delegate(EffImage x, int i, int j){
+            ProcessEach((CustomProc)delegate (EffImage x, int i, int j)
+            {
                 var color = x.At(i, j);
                 var grayscale = (color.R * 30 + color.G * 59 + color.B * 11) / 100;
                 x.Set(i, j, Color.FromArgb(grayscale, grayscale, grayscale));
             });
+            imageColorType = ImageColorType.GrayScale;
         }
 
         /// <summary>
@@ -389,15 +312,32 @@ namespace Imprint.Imaging
         /// <param name="thresold">前景门限</param>
         public void Binarization(int thresold)
         {
-            ProcessEach((CustomProc)delegate(EffImage x, int i, int j)
-                {
-                    var c = x.At(i, j);
-                    if (c.R < thresold)
-                        x.Set(i, j, Color.Black);
-                    else
-                        x.Set(i, j, Color.White);
-                });
+            ProcessEach((CustomProc)delegate (EffImage x, int i, int j)
+            {
+                var c = x.At(i, j);
+                if (c.R < thresold)
+                    x.Set(i, j, Color.Black);
+                else
+                    x.Set(i, j, Color.White);
+            });
+            imageColorType = ImageColorType.Binary;
         }
+
+        /// <summary>
+        /// 反色
+        /// </summary>
+        public void Reverse()
+        {
+            ProcessEach((img, x, y) =>
+            {
+                var color = img.At(x, y);
+                var revColor = Color.FromArgb(255 - color.R, 255 - color.G, 255 - color.B);
+
+                img.Set(x, y, revColor);
+            });
+        }
+
+
         /// <summary>
         /// 像素数据转位图对象
         /// </summary>
@@ -406,10 +346,10 @@ namespace Imprint.Imaging
             get
             {
                 Bitmap bm = new Bitmap(width, height, PixelFormat.Format24bppRgb);
-                BitmapData srcBmData = bm.LockBits(new Rectangle(0,0,width,height),
+                BitmapData srcBmData = bm.LockBits(new Rectangle(0, 0, width, height),
                     ImageLockMode.ReadWrite, bm.PixelFormat);
 
-                System.IntPtr srcScan = srcBmData.Scan0;
+                IntPtr srcScan = srcBmData.Scan0;
                 unsafe
                 {
                     byte* srcP = (byte*)(void*)srcScan;
@@ -421,7 +361,7 @@ namespace Imprint.Imaging
                             Color c = At(x, y);
                             srcP[0] = c.B;
                             srcP[1] = c.G;
-                            srcP[2] = c.R;             
+                            srcP[2] = c.R;
                         }
                         srcP += srcOffset;//跳过填充字节 
                     }
@@ -433,7 +373,6 @@ namespace Imprint.Imaging
 
         /// <summary>
         /// X轴投影直方图
-        /// TODO: 前景门限
         /// <returns></returns>
         public int[] ProjectionHistH()
         {
@@ -441,7 +380,7 @@ namespace Imprint.Imaging
             ProcessEach((im, i, j) =>
             {
                 var colr = im.At(i, j);
-                if (colr.R < 50) //foreground
+                if (isForeground(colr)) //foreground
                     hist[i]++;
             });
             return hist;
@@ -449,7 +388,6 @@ namespace Imprint.Imaging
 
         /// <summary>
         /// Y轴投影直方图
-        /// TODO: 前景门限
         /// </summary>
         /// <returns></returns>
         public int[] ProjectionHistV()
@@ -458,85 +396,29 @@ namespace Imprint.Imaging
             ProcessEach((im, i, j) =>
             {
                 var colr = im.At(i, j);
-                if (colr.R < 50) //foreground
+                if (isForeground(colr)) //foreground
                     hist[j]++;
-            },false);
+            }, false);
             return hist;
         }
-        /// <summary>
-        ///  去掉杂点（适合杂点/杂线粗为1）
-        ///  NOTE: 没什么用
-        /// </summary>
-        public void ClearNoise(int MaxNearPoints)
-        {
-            Color piexl;
-            int nearDots = 0;
-            int dgGrayValue = 50;
-            //     int XSpan, YSpan, tmpX, tmpY;
-            //逐点判断
-            for (int i = 0; i < Width; i++)
-                for (int j = 0; j < Height; j++)
-                {
-                    piexl = At(i, j);
-                    if (piexl.R < dgGrayValue)
-                    {
-                        nearDots = 0;
-                        //判断周围8个点是否全为空
-                        if (i == 0 || i == Width - 1 || j == 0 || j == Height - 1)  //边框全去掉
-                        {
-                            Set(i, j, Color.FromArgb(255, 255, 255));
-                        }
-                        else
-                        {
-                            if (At(i - 1, j - 1).R < dgGrayValue) nearDots++;
-                            if (At(i, j - 1).R < dgGrayValue) nearDots += 2;
 
-                            if (At(i + 1, j - 1).R < dgGrayValue) nearDots += 2;
-
-                            if (At(i - 1, j).R < dgGrayValue) nearDots++;
-
-                            if (At(i + 1, j).R < dgGrayValue) nearDots++;
-
-                            if (At(i - 1, j + 1).R < dgGrayValue) nearDots += 2;
-
-                            if (At(i, j + 1).R < dgGrayValue) nearDots += 2;
-
-                            if (At(i + 1, j + 1).R < dgGrayValue) nearDots += 2;
-                        }
-
-                        if (nearDots < MaxNearPoints)
-                            Set(i, j, Color.FromArgb(255, 255, 255));   //去掉单点 && 粗细小3邻边点
-                    }
-                    else  //背景
-                        Set(i, j, Color.FromArgb(255, 255, 255));
-                }
-        }
 
         /// <summary>
-        /// 复制图片并转换像素信息编码成EffImage支持格式
-        /// XXX: 低效 . 慎用
+        /// NOTE: 只支持24bit RGB/32bit ARGB, 其他类型需要先使用ToPixelImg进行转换
         /// </summary>
-        /// <param name="Img"></param>
-        /// <returns></returns>
-        public static Bitmap ToPixelImg(Bitmap Img)
-        {
-            Bitmap Copy = new Bitmap(Img.Width, Img.Height, System.Drawing.Imaging.PixelFormat.Format24bppRgb);
-            for (int i = 0; i < Copy.Width; i++)
-            {
-                for (int j = 0; j < Copy.Height; j++)
-                {
-                    Copy.SetPixel(i, j, Img.GetPixel(i, j));
-                }
-            }
-            return Copy;
-        }
-        public EffImage(Bitmap src)
+        /// <param name="src"></param>
+        public EffImage(Bitmap src, ImageColorType colorType = ImageColorType.Binary, byte rThreshold = 50, byte gThreshold = 50, byte bThreshold = 50)
         {
             width = src.Width;
             height = src.Height;
             pixels = new Color[width, height];
+
+            // 前景门限
+            imageColorType = colorType;
+            foregroundThreshold = Color.FromArgb(rThreshold, gThreshold, bThreshold);
+
             Rectangle rect = new Rectangle(0, 0, width, height);
-            int offset=3;
+            int offset = 3;
             if (src.PixelFormat == PixelFormat.Format24bppRgb)
                 offset = 3;
             else if (src.PixelFormat == PixelFormat.Format32bppArgb)
@@ -556,7 +438,7 @@ namespace Imprint.Imaging
             * (XXX大小为 Stride-(Width*3) ) 
             * 
             */
-            System.IntPtr srcScan = srcBmData.Scan0;
+            IntPtr srcScan = srcBmData.Scan0;
             unsafe
             {
                 byte* srcP = (byte*)(void*)srcScan;
@@ -599,9 +481,6 @@ namespace Imprint.Imaging
             int filterHeight = filterMatrix.GetLength(0);
 
             int filterOffset = (filterWidth - 1) / 2;
-            int calcOffset = 0;
-
-            int byteOffset = 0;
 
 
 
@@ -651,6 +530,7 @@ namespace Imprint.Imaging
             }
             this.pixels = rt.pixels;
         }
+
         /// <summary>
         /// 质心
         /// </summary>
@@ -662,7 +542,7 @@ namespace Imprint.Imaging
                 ProcessEach((m, i, j) =>
                 {
                     var c = m.At(i, j);
-                    if (c.R < 50)
+                    if (isForeground(c))
                     {
                         meanX += i;
                         meanY += j;
@@ -675,59 +555,63 @@ namespace Imprint.Imaging
                 return new Point(meanX, meanY);
             }
         }
-        /// <summary>
-        /// 边缘提取
-        /// </summary>
-        public void Contouring()
-        {
-            ConvolutionFilter(Laplacian3x3, 1, 0);
-        }
-        /// <summary>
-        /// 细化
-        /// </summary>
-        public void Thining()
-        {
-            thiniter(0);
-            thiniter(1);
-        }
 
-        int Convert(Color c)
-        {
-            return c.R < 100 ? 1 : 0;
-        }
-        /// <summary>
-        /// 某论文上的细化算法OpenCV改EffImage版
-        /// </summary>
-        /// <param name="iter"></param>
-        private void thiniter(byte iter)
-        {
-            for (int i = 1; i < Width - 1; i++)
-                for (int j = 1; j < Height - 1; j++)
-                {
-                    int p2 = Convert(At(i - 1, j)); //im.at<uchar>(i - 1, j);
-                    int p3 = Convert(At(i - 1, j + 1)); //im.at<uchar>(i - 1, j + 1);
-                    int p4 = Convert(At(i, j + 1)); //im.at<uchar>(i, j + 1);
-                    int p5 = Convert(At(i + 1, j + 1)); //im.at<uchar>(i + 1, j + 1);
-                    int p6 = Convert(At(i + 1, j)); //im.at<uchar>(i + 1, j);
-                    int p7 = Convert(At(i + 1, j - 1)); //im.at<uchar>(i + 1, j - 1);
-                    int p8 = Convert(At(i, j - 1)); //im.at<uchar>(i, j - 1);
-                    int p9 = Convert(At(i - 1, j - 1));//im.at<uchar>(i - 1, j - 1);
+   
+        //public void ElasticDistortion (bool bNorm = false,
+        //                 double sigma = 4,
+        //                 double alpha = 34)
+        //{
+        //    double low = -1.0;
+        //    double high = 1.0;
 
-                    int A = System.Convert.ToInt32((p2 == 0 && p3 == 1)) + System.Convert.ToInt32((p3 == 0 && p4 == 1)) +
-                              System.Convert.ToInt32((p4 == 0 && p5 == 1)) + System.Convert.ToInt32((p5 == 0 && p6 == 1)) +
-                              System.Convert.ToInt32((p6 == 0 && p7 == 1)) + System.Convert.ToInt32((p7 == 0 && p8 == 1)) +
-                              System.Convert.ToInt32((p8 == 0 && p9 == 1)) + System.Convert.ToInt32((p9 == 0 && p2 == 1));
-                    int B = p2 + p3 + p4 + p5 + p6 + p7 + p8 + p9;
-                    int m1 = iter == 0 ?
-                        (p2 * p4 * p6) :
-                        (p2 * p4 * p8);
-                    int m2 = iter == 0 ?
-                        (p4 * p6 * p8) :
-                        (p2 * p6 * p8);
+        //    //The image deformations were created by first generating
+        //    //random displacement fields, that's dx(x,y) = rand(-1, +1) and dy(x,y) = rand(-1, +1)
+        //    cv::randu(dx, cv::Scalar(low), cv::Scalar(high));
+        //    cv::randu(dy, cv::Scalar(low), cv::Scalar(high));
 
-                    if (A == 1 && (B >= 2 && B <= 6) && m1 == 0 && m2 == 0)
-                        Set(i, j, Color.White);
-                }
+        //    //The fields dx and dy are then convolved with a Gaussian of standard deviation sigma(in pixels)
+        //    cv::Size kernel_size(sigma*6 + 1, sigma * 6 + 1);
+        //    cv::GaussianBlur(dx, dx, kernel_size, sigma);
+        //    cv::GaussianBlur(dy, dy, kernel_size, sigma);
+
+        //    //If we normalize the displacement field (to a norm of 1,
+        //    //the field is then close to constant, with a random direction
+        //    if (bNorm)
+        //    {
+        //        dx /= cv::norm(dx, cv::NORM_L1);
+        //        dy /= cv::norm(dy, cv::NORM_L1);
+        //    }
+
+        //    //The displacement fields are then multiplied by a scaling factor alpha
+        //    //that controls the intensity of the deformation.
+        //    dx *= alpha;
+        //    dy *= alpha;
+
+        //    //Inverse(or Backward) Mapping to avoid gaps and overlaps.
+        //    cv::Rect checkError(0, 0, src.cols, src.rows);
+        //    int nCh = src.channels();
+
+        //    for (int displaced_y = 0; displaced_y < src.rows; displaced_y++)
+        //        for (int displaced_x = 0; displaced_x < src.cols; displaced_x++)
+        //        {
+        //            int org_x = displaced_x - dx.at<double>(displaced_y, displaced_x);
+        //            int org_y = displaced_y - dy.at<double>(displaced_y, displaced_x);
+
+        //            if (checkError.contains(cv::Point(org_x, org_y)))
+        //            {
+        //                for (int ch = 0; ch < nCh; ch++)
+        //                {
+        //                    dst.data[(displaced_y * src.cols + displaced_x) * nCh + ch] = src.data[(org_y * src.cols + org_x) * nCh + ch];
+        //                }
+        //            }
+        //        }
+        //}        
+
+
+
+        public void Dispose()
+        {
+            pixels = null;
         }
     }
 }

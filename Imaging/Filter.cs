@@ -9,6 +9,9 @@ using System.Threading.Tasks;
 namespace Imprint.Imaging
 {
 
+    /// <summary>
+    /// 3x3 卷积矩阵
+    /// </summary>
     public class ConvMatrix
     {
         public double TopLeft = 0, TopMid = 0, TopRight = 0;

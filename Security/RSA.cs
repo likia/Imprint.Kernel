@@ -366,7 +366,11 @@ namespace Imprint.Security
         }
         #endregion
 
-        // pub:priv
+        /// <summary>
+        /// 密钥格式 pub:priv
+        /// </summary>
+        /// <param name="key"></param>
+        /// <returns></returns>
         public bool Init(string key)
         {
             var groups = key.Split(':');
