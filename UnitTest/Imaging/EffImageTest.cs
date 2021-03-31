@@ -1,6 +1,7 @@
 ﻿using Imprint.Imaging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using System.Drawing;
 
@@ -23,8 +24,71 @@ namespace UnitTest.Imaging
             image = new EffImage(bmp);
         }
 
+        [TestMethod]
+        public void TestConnectedArea()
+        {
+            bmp = new Bitmap(32, 32);
+            g = Graphics.FromImage(bmp);
+            g.Clear(Color.White);
+
+            // 三条线
+            g.DrawLine(Pens.Black, new Point(0, 4), new Point(32, 4));
+            g.DrawLine(Pens.Black, new Point(1, 8), new Point(20, 8));
+            g.DrawLine(Pens.Black, new Point(1, 12), new Point(20, 12));
+
+            // 框框 1-20, 22-27
+            g.FillRectangle(Brushes.Black, new Rectangle(1, 22, 20, 5));
+            g.FillRectangle(Brushes.Black, new Rectangle(1, 30, 20,32));
+
+            g.Save();
+            image = new EffImage(bmp);
+            var area = image.ConnectedAreas.ToArray();
+            Assert.AreEqual(5, area.Length);
+            var max = area.Max(i => i.Size.Height * i.Size.Width);
+            var maxCount = area.Max(i => i.Points.Count);
+            // 最大面积
+            Assert.AreEqual(100, max);
+            Assert.AreEqual(100, maxCount);
+        }
 
 
+        [TestMethod]
+        public void TestOCR()
+        {
+            var img = new EffImage((Bitmap)Bitmap.FromFile("z:/test.jpg"));
+            img.GrayScale();
+            img.Binarization(100);
+            img.Origin.Save("z:/test_bin.bmp");
+
+            img = EffImage.Resize(img, 1024 , 768);
+
+
+            
+            var vhist = img.ProjectionHistV();
+
+            // 用垂直投影找底部
+            var bottom = img.Bottom;
+            int upperBound = 0;
+            for (upperBound = bottom; upperBound > 0; upperBound--)
+            {
+                if (vhist[upperBound] <= 5) break;
+            }
+            
+            var idImg = EffImage.CutV(img, upperBound, bottom);
+            idImg.ClearNoise(3);
+
+            idImg.Binarization(50);
+            var area = idImg.ConnectedAreas;
+            int i = 0;
+            
+            foreach (var item in area)
+            {
+                var rect = item.ValidArea;
+                var seg = EffImage.CutH(EffImage.CutV(idImg, rect.Top, rect.Bottom), rect.Left, rect.Right);
+                var resz = EffImage.Resize(seg, 28, 28);
+                resz.Origin.Save($"z:/seg/{i++}.bmp");
+            }
+        }
 
         [TestMethod]
         public void TestReverse()

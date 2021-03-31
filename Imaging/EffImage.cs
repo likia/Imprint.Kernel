@@ -21,10 +21,11 @@ namespace Imprint.Imaging
         Colored,
     }
 
+
     /// <summary>
     /// 高性能验证码图像处理类
     /// </summary>
-    public partial class EffImage : IDisposable
+    public partial class EffImage : IDisposable , ICloneable
     {
         /// <summary>
         /// 宽高
@@ -74,6 +75,84 @@ namespace Imprint.Imaging
             }
         }
 
+        /// <summary>
+        /// BFS搜索所有连接区域
+        /// </summary>
+        public List<ConnectedArea> ConnectedAreas
+        {
+            get
+            {
+                var areaList = new List<ConnectedArea>();
+
+                using (var img = (EffImage)this.Clone())
+                {
+                    while (img.ActualSize.Width > 0)
+                    {
+                        var pointList = new List<Point>();
+                        var queue = new Queue<Point>();
+                        var map = new bool[Width, Height];
+
+                        // 找左边第一个前景点
+                        int j;
+                        var i = img.Left;
+                        for (j = 0; j < Height; j++)
+                        {
+                            if (isForeground(At(i,j)))
+                            {
+                                break;
+                            }
+                        }
+                        // 起始点出发
+                        var initPoint = new Point(img.Left, j);                        
+
+                        queue.Enqueue(initPoint);
+
+                        while (queue.Count > 0)
+                        {
+                            var p = queue.Dequeue();
+                            // 去重
+                            if (map[p.X, p.Y]) continue;
+
+                            map[initPoint.X, initPoint.Y] = true;
+
+                            img.Set(p.X, p.Y, Color.White);
+                            if (!pointList.Contains(p))
+                                pointList.Add(p);
+
+                            var offsetX = new int[] { -1, 0, 1 };
+                            var offsetY = new int[] { -1, 0, 1 };
+
+                            foreach (var x in offsetX)
+                            {
+                                foreach (var y in offsetY)
+                                {
+                                    if (x == 0 && y == 0) continue;
+
+                                    var newPonint = new Point(p.X + x, p.Y + y);
+
+                                    if (isForeground(At(newPonint.X, newPonint.Y)))
+                                    {
+                                        queue.Enqueue(newPonint);
+                                        // 标记
+                                        map[p.X, p.Y] = true;
+                                    }
+                                }
+                            }
+                        }
+                        if (pointList.Count > 2)
+                        {
+                            // 队列空
+                            areaList.Add(new ConnectedArea()
+                            {
+                                Points = pointList
+                            });
+                        }
+                    }
+                    // 图片空
+                    return areaList;
+                }
+            }
+        }
 
 
         /// <summary>
@@ -612,6 +691,13 @@ namespace Imprint.Imaging
         public void Dispose()
         {
             pixels = null;
+        }
+
+        public object Clone()
+        {
+            var img = EffImage.White(Width, Height);
+            img.pixels = (Color[,])this.pixels.Clone();
+            return img;
         }
     }
 }

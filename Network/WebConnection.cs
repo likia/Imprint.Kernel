@@ -32,7 +32,7 @@ namespace Imprint.Network
         private ReflectionHandler Processor;
         private HttpWebRequest BaseRequest;
         public object ResponseObject;
-        private RequestMethod ReqMethod;
+        private RequestMethod ReqMethod = RequestMethod.GET;
         private object ReqObject;
         private bool AllowRedirect = false;
         public HttpWebResponse LastResponse;
@@ -217,7 +217,7 @@ namespace Imprint.Network
         /// <returns></returns>
         public bool SendRequestAsync(RequestMethod Method, object Data)
         {
-            System.Threading.Thread RequestThread = new System.Threading.Thread(new System.Threading.ThreadStart(SendRequestProxy));
+            Thread RequestThread = new Thread(new ThreadStart(SendRequestProxy));
             SetMethod(Method);
             SetData(Data);
             RequestThread.Start();
@@ -268,7 +268,7 @@ namespace Imprint.Network
                     {
                         Body = Processor.ObjectToData(Data);
                     }
-                    BaseRequest.Method = Method.ToString();
+                    BaseRequest.Method = Enum.GetName(typeof(RequestMethod), Method);
                     BaseRequest.AllowAutoRedirect = AllowRedirect;
                     BaseRequest.Expect = null;
                     if (BaseRequest.CookieContainer == null)

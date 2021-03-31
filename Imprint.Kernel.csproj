@@ -75,6 +75,7 @@
     <Compile Include="Db\Pool\ConnectionPool.cs" />
     <Compile Include="Db\Pool\IConnector.cs" />
     <Compile Include="Db\Pool\MySQLConnector.cs" />
+    <Compile Include="Imaging\ConnectedArea.cs" />
     <Compile Include="Imaging\EffImage.cs" />
     <Compile Include="Imaging\EffImage.Extensions.cs" />
     <Compile Include="Imaging\EffImage.Static.cs" />

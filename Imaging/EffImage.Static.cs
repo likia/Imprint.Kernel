@@ -108,18 +108,34 @@ namespace Imprint.Imaging
         /// <param name="img"></param>
         /// <param name="w">目标宽</param>
         /// <param name="h">目标高</param>
+        /// <param name="keepRatio">是否保持原始比例</param>
         /// <returns></returns>
-        public static EffImage Resize(EffImage img, int w, int h)
+        public static EffImage Resize(EffImage img, int w, int h, bool keepRatio = true)
         {
             Bitmap bmp = new Bitmap(w, h);
             Graphics g = Graphics.FromImage(bmp);
             g.Clear(Color.White);
             var src = img.Origin;
 
-            g.DrawImage(src,
-                new Rectangle(0, 0, w, h),
-                new Rectangle(0, 0, img.width, img.height)
-                , GraphicsUnit.Pixel);
+            var dstRect = new Rectangle(0, 0, w, h);
+            var srcRect = new Rectangle(0, 0, img.width, img.height);
+
+            // 保持原始比例
+            if (keepRatio)
+            {
+                var wRatio = (double)img.width / (double)w;
+                var hRatio = (double)img.height / (double)h;
+                // 选一个
+                var r = Math.Max(wRatio, hRatio);
+                var dstW = img.width / r;
+                var dstH = img.height / r;
+
+                var padL = (w - dstW) / 2;
+                var padT = (h - dstH) / 2;
+                dstRect = new Rectangle((int)padL, (int)padT, (int)dstW, (int)dstH);
+            }
+
+            g.DrawImage(src, dstRect, srcRect, GraphicsUnit.Pixel);
 
             var rt = new EffImage(bmp);
 
