@@ -168,6 +168,15 @@ namespace Imprint.Network
         public WebConnection SetCookie(CookieCollection Cookies)
         {
             CookieContainer BaseCookie = (BaseRequest.CookieContainer == null) ? new CookieContainer() : BaseRequest.CookieContainer;
+            // 检测是否空域名的cookie
+            // 指定的cookie有可能是空域名的
+            foreach  (Cookie item in Cookies)
+            {
+                if (string.IsNullOrWhiteSpace(item.Domain))
+                {
+                    item.Domain = GetDomain();
+                }
+            }
             BaseCookie.Add(Cookies);
             BaseRequest.CookieContainer = BaseCookie;            
             return this;
