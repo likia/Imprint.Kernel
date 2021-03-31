@@ -85,26 +85,27 @@ namespace Imprint.Imaging
             {
                 var areaList = new List<ConnectedArea>();
 
-                using (var img = (EffImage)this.Clone())
+                using (var img = (EffImage)Clone())
                 {
-                    while (img.ActualSize.Width > 0)
+
+                    while (img.Left != -1)
                     {
                         var pointList = new List<Point>();
                         var queue = new Queue<Point>();
-                        var map = new bool[Width, Height];
+                        var map = new bool[img.Width, img.Height];
 
                         // 找左边第一个前景点
                         int j;
                         var i = img.Left;
-                        for (j = 0; j < Height; j++)
+                        for (j = 0; j < img.Height; j++)
                         {
-                            if (isForeground(At(i,j)))
+                            if (img.isForeground(img.At(i, j)))
                             {
                                 break;
                             }
                         }
                         // 起始点出发
-                        var initPoint = new Point(img.Left, j);                        
+                        var initPoint = new Point(i, j);
 
                         queue.Enqueue(initPoint);
 
@@ -117,6 +118,7 @@ namespace Imprint.Imaging
                             map[initPoint.X, initPoint.Y] = true;
 
                             img.Set(p.X, p.Y, Color.White);
+
                             if (!pointList.Contains(p))
                                 pointList.Add(p);
 
@@ -131,11 +133,12 @@ namespace Imprint.Imaging
 
                                     var newPonint = new Point(p.X + x, p.Y + y);
 
-                                    if (isForeground(At(newPonint.X, newPonint.Y)))
+                                    if (img.isForeground(img.At(newPonint.X, newPonint.Y)))
                                     {
-                                        queue.Enqueue(newPonint);
-                                        // 标记
-                                        map[p.X, p.Y] = true;
+                                        if (!map[newPonint.X, newPonint.Y] && !queue.Contains(newPonint))
+                                        {
+                                            queue.Enqueue(newPonint);
+                                        }
                                     }
                                 }
                             }
@@ -154,6 +157,7 @@ namespace Imprint.Imaging
                 }
             }
         }
+        
 
 
         /// <summary>
@@ -714,7 +718,7 @@ namespace Imprint.Imaging
         public object Clone()
         {
             var img = EffImage.White(Width, Height);
-            img.pixels = (Color[,])this.pixels.Clone();
+            img.pixels = this.pixels.Clone() as Color[,];
             return img;
         }
     }
