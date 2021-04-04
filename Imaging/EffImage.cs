@@ -49,6 +49,11 @@ namespace Imprint.Imaging
         private Color foregroundThreshold;
 
         /// <summary>
+        /// 是否开启并行计算
+        /// </summary>
+        private bool useParalle => width * height > 500000;
+
+        /// <summary>
         /// 判断是否是前景值
         /// </summary>
         /// <param name="color"></param>
@@ -157,7 +162,29 @@ namespace Imprint.Imaging
                 }
             }
         }
-        
+
+        /// <summary>
+        /// 色域直方图
+        /// </summary>
+        /// <returns></returns>
+        public int[] ColorHistogram
+        {
+            get
+            {
+                if (imageColorType != ImageColorType.GrayScale) throw new NotSupportedException("只支持灰度图");
+
+                var hist = new int[256];
+                hist.Initialize();
+
+                ProcessEach((img, i, j) =>
+                {
+                    var color = img.At(i, j);
+
+                    hist[color.R]++;
+                });
+                return hist;
+            }
+        }
 
 
         /// <summary>
@@ -255,16 +282,18 @@ namespace Imprint.Imaging
         /// <summary>
         /// 每个像素进行处理
         /// 
-        /// TODO: 根据图片大小自动选择是否并行
-        /// TODO2: 并行的同时是否也可以并发多线程处理？
-        /// 
         /// </summary>
         /// <param name="proc">回调</param>
         /// <param name="linefirst">是否一行一行遍历</param>
         /// <param name="parallel">是否并行， 发挥多核cpu性能， 适合大图片， 小图片反而增加开销</param>
-        public void ProcessEach(CustomProc proc, bool linefirst = true, bool parallel = false)
+        public void ProcessEach(CustomProc proc, bool linefirst = true, bool? parallel = null)
         {
             int fstLim = 0, lstLim = 0;
+
+            if (parallel == null)
+            {
+                parallel = useParalle;
+            }
 
             if (linefirst)
             {
@@ -276,9 +305,9 @@ namespace Imprint.Imaging
                 fstLim = height;
                 lstLim = width;
             }
-            if (parallel)
+            if (parallel == true)
             {
-                Parallel.For(0, fstLim, (i) =>
+                Parallel.For(0, fstLim,(i) =>
                 {
                     Parallel.For(0, lstLim, (j) =>
                     {
@@ -655,6 +684,72 @@ namespace Imprint.Imaging
                 meanY /= count;
                 return new Point(meanX, meanY);
             }
+        }
+
+
+
+        /// <summary>
+        /// 自适应二值化
+        /// 
+        /// OTSU
+        /// </summary>
+        public void AdativeBinarization()
+        {
+            var hist = ColorHistogram;
+
+            var vet = new float[256];
+            vet.Initialize();
+
+
+            float p1, p2, p12;
+
+            // function is used to compute the q values in the equation
+            float Px(int init, int end)
+            {
+                int sum = 0;
+                int i;
+                for (i = init; i <= end; i++)
+                    sum += hist[i];
+
+                return (float)sum;
+            }
+
+            // function is used to compute the mean values in the equation (mu)
+            float Mx(int init, int end)
+            {
+                int sum = 0;
+                int i;
+                for (i = init; i <= end; i++)
+                    sum += i * hist[i];
+
+                return (float)sum;
+            }
+
+            // loop through all possible t values and maximize between class variance
+            for (int k = 1; k < 255; k++)
+            {
+                p1 = Px(0, k);
+                p2 = Px(k + 1, 255);
+                p12 = p1 * p2;
+                if (p12 == 0)
+                    p12 = 1;
+                float diff = (Mx(0, k) * p2) - (Mx(k + 1, 255) * p1);
+                vet[k] = (float)diff * diff / p12;
+                //vet[k] = (float)Math.Pow((Mx(0, k, hist) * p2) - (Mx(k + 1, 255, hist) * p1), 2) / p12;
+            }
+
+            var max = 0f;
+            var maxIndex = -1;
+            for (int i = 0; i < vet.Length; i++)
+            {
+                if (vet[i] > max)
+                {
+                    max = vet[i];
+                    maxIndex = i;
+                }
+            }
+
+            Binarization(maxIndex);
         }
 
    

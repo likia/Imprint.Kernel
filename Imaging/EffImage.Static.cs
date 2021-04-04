@@ -96,7 +96,6 @@ namespace Imprint.Imaging
             int padright = (h - phei) / 2 - 1;
             var sr = CutV(CutH(eimg, left, right), top, bot);
             g.DrawImage(sr.Origin, new Point(padleft, padright));
-            g.Save();
             g.Dispose();
             return rt;
         }
@@ -114,6 +113,8 @@ namespace Imprint.Imaging
         {
             Bitmap bmp = new Bitmap(w, h);
             Graphics g = Graphics.FromImage(bmp);
+            g.CompositingQuality = System.Drawing.Drawing2D.CompositingQuality.HighQuality;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.None;
             g.Clear(Color.White);
             var src = img.Origin;
 
@@ -139,6 +140,8 @@ namespace Imprint.Imaging
 
             var rt = new EffImage(bmp);
 
+            g.Flush();
+            g.Dispose();
             src.Dispose();
             bmp.Dispose();
             return rt;

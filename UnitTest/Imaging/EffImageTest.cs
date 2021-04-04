@@ -40,7 +40,6 @@ namespace UnitTest.Imaging
             g.FillRectangle(Brushes.Black, new Rectangle(1, 22, 20, 5));
             g.FillRectangle(Brushes.Black, new Rectangle(1, 30, 20,32));
 
-            g.Save();
             image = new EffImage(bmp);
             var area = image.ConnectedAreas.ToArray();
             Assert.AreEqual(5, area.Length);
@@ -92,6 +91,16 @@ namespace UnitTest.Imaging
             }, parallel: true);
         }
 
+
+        [TestMethod]
+        public void TestAdativeBinary()
+        {
+            var img = new EffImage((Bitmap)Bitmap.FromFile("z:/test3.png"));
+            img.GrayScale();
+            img.AdativeBinarization();
+            img.Origin.Save("z:/test_bin.bmp");
+        }
+
         [TestMethod]
         public void TestOCR()
         {
@@ -125,7 +134,7 @@ namespace UnitTest.Imaging
             {
                 var rect = item.ValidArea;
                 var seg = EffImage.CutH(EffImage.CutV(idImg, rect.Top, rect.Bottom), rect.Left, rect.Right);
-                var resz = EffImage.Resize(seg, 28, 28);
+                var resz = EffImage.Resize(seg, 32, 32);
                 resz.Origin.Save($"z:/seg/{i++}.bmp");
             }
         }
