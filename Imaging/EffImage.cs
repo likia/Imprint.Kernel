@@ -307,13 +307,13 @@ namespace Imprint.Imaging
             }
             if (parallel == true)
             {
-                Parallel.For(0, fstLim,(i) =>
-                {
-                    Parallel.For(0, lstLim, (j) =>
-                    {
-                        proc(this, i, j);
-                    });
-                });
+                Parallel.For(0, fstLim, (i) =>
+                 {
+                     Parallel.For(0, lstLim, (j) =>
+                     {
+                         proc(this, i, j);
+                     });
+                 });
             }
             else
             {
@@ -613,7 +613,7 @@ namespace Imprint.Imaging
             int filterOffset = (filterWidth - 1) / 2;
 
 
-
+            // TODO : PADDING边角
             for (int x = filterOffset; x <
                 Width - filterOffset; x++)
             {

@@ -4,6 +4,8 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Drawing;
+using Imprint.Network;
+using System.IO;
 
 namespace UnitTest.Imaging
 {
@@ -99,6 +101,31 @@ namespace UnitTest.Imaging
             img.GrayScale();
             img.AdativeBinarization();
             img.Origin.Save("z:/test_bin.bmp");
+        }
+
+        [TestMethod]
+        public void TestCutting()
+        {
+            var session = new WebSession();
+            var buf=session.GetRaw("https://www.baidu.com/img/PCtm_d9c8750bed0b3c7d089fa7d55720d6cf.png");
+            var ms = new MemoryStream(buf);
+            var img = (Bitmap)Image.FromStream(ms);
+            var eff = new EffImage(img);
+            
+            // 透明底rgb是0
+            eff.ProcessEach((_,i,j)=>
+            {
+                var color = _.At(i, j);
+
+                if (color.R == 0) _.Set(i,j, Color.White);
+            });
+
+            eff.GrayScale();
+            eff.AdativeBinarization();
+            eff = EffImage.CutH(eff, 200, 330);
+            eff = EffImage.CutV(eff, 100, 230);
+            eff.Origin.Save("z:/cut.bmp");
+
         }
 
         [TestMethod]

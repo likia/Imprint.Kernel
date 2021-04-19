@@ -54,10 +54,12 @@ namespace Imprint.Imaging
         /// <returns></returns>
         public static EffImage White(int w, int h)
         {
-            Bitmap rt = new Bitmap(w, h);
-            Graphics g = Graphics.FromImage(rt);
-            g.Clear(Color.White);
-            return new EffImage(rt);
+            using (Bitmap rt = new Bitmap(w, h))
+            {
+                Graphics g = Graphics.FromImage(rt);
+                g.Clear(Color.White);
+                return new EffImage(rt);
+            }
         }
 
         /// <summary>
@@ -69,7 +71,10 @@ namespace Imprint.Imaging
         /// <returns></returns>
         public static EffImage Padding(EffImage src, int w, int h)
         {
-            return new EffImage(Padding(src.Origin, w, h));
+            using (var bmp = src.Origin)
+            {
+                return new EffImage(Padding(bmp, w, h));
+            }
         }
 
 
@@ -161,7 +166,9 @@ namespace Imprint.Imaging
             if (s > 1) s -= 1;
             if (e < x.Height - 1) e += 1;
 
+            
             EffImage rt = White(x.Width, e - s);
+
             for (int j = s; j < e; j++)
             {
                 for (int i = 0; i < x.Width; i++)
