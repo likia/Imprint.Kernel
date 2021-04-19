@@ -52,6 +52,7 @@
   <ItemGroup>
     <Compile Include="Imaging\EffImageTest.cs" />
     <Compile Include="Network\WebSessionTest.cs" />
+    <Compile Include="Task\DispatcherTest.cs" />
     <Compile Include="UnitTest1.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>

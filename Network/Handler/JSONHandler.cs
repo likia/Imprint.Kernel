@@ -20,7 +20,7 @@ namespace Imprint.Network.Handler
         public object DataToObject(byte[] Data)
         {
             var str = Encoding.Default.GetString(Data);
-            dynamic jsonObj = JObject.Parse(str);
+            var jsonObj = JObject.Parse(str);
             return jsonObj;
         }
 

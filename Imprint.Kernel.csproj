@@ -72,6 +72,8 @@
     <Compile Include="Core\SaveManager.cs" />
     <Compile Include="Core\SettingManager.cs" />
     <Compile Include="Core\Storage.cs" />
+    <Compile Include="Db\IRepository.cs" />
+    <Compile Include="Db\PagedList.cs" />
     <Compile Include="Db\Pool\ConnectionPool.cs" />
     <Compile Include="Db\Pool\IConnector.cs" />
     <Compile Include="Db\Pool\MySQLConnector.cs" />
@@ -98,7 +100,9 @@
     <Compile Include="Security\RSA.cs" />
     <Compile Include="Security\SecureHash.cs" />
     <Compile Include="Task\Dispatcher.cs" />
+    <Compile Include="Task\WorkerDispatcher.cs" />
     <Compile Include="Task\Ticker.cs" />
+    <Compile Include="Task\WorkerJob.cs" />
     <Compile Include="Trinity\Model\ActivationFunction.cs" />
     <Compile Include="Trinity\Model\Connection.cs" />
     <Compile Include="Trinity\Model\Layer.cs" />
