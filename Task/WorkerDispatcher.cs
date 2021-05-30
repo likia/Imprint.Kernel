@@ -98,6 +98,10 @@ namespace Imprint.Task
         /// <param name="execInterv"></param>
         public void Start(int threadCount, int execInterv)
         {
+            if (state == DispatcherState.BUSY)
+            {
+                return;
+            }
             ThreadCount = threadCount;
             Interval = execInterv;
             exitedThread = 0;

@@ -92,6 +92,7 @@ namespace Imprint.Network
             else
             {
                 Headers = new NameValueCollection();
+                Headers.Add("User-Agent", UserAgent.PC);
             }
             this.AllowRedirect = AllowRedirect;
             this.Timeout = Timeout;
@@ -170,6 +171,68 @@ namespace Imprint.Network
         }
 
         /// <summary>
+        /// 异步
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="data"></param>
+        /// <param name="referer"></param>
+        /// <returns></returns>
+        public async Task<Object> PostAsync(string uri, Object data, string referer = null)
+        {
+            var conn = buildRequest(uri);
+            conn.SetMethod(RequestMethod.POST);
+            if (string.IsNullOrEmpty(Headers["Content-Type"]))
+            {
+                // 未设置默认表单类型
+                conn.SetHeader("Content-Type", "application/x-www-form-urlencoded");
+            }
+            if (referer != null)
+            {
+                conn.SetHeader(HttpRequestHeader.Referer, referer);
+            }
+            return await SendRequestAsync(conn, data);
+        }
+
+
+
+        /// <summary>
+        /// 异步GET
+        /// </summary>
+        /// <param name="uri"></param>
+        /// <param name="referer"></param>
+        /// <returns></returns>
+        public async Task<Object> GetAsync(string uri, string referer = null)
+        {
+            var conn = buildRequest(uri);
+            if (referer != null)
+                conn.SetHeader(HttpRequestHeader.Referer, referer);
+            conn.SetMethod(RequestMethod.GET);
+
+            return await SendRequestAsync(conn);
+        }
+
+
+        /// <summary>
+        /// GET获取原始字节数组
+        /// </summary>
+        /// <param name="url"></param>
+        /// <param name="referer"></param>
+        /// <returns></returns>
+        public async Task<byte[]> GetRawAsync(string url, string referer = null)
+        {
+            var rawHandler = new RawHandler();
+            var conn = buildRequest(url);
+            if (referer != null)
+            {
+                conn.SetHeader(HttpRequestHeader.Referer, referer);
+            }
+            conn.SetProcessor(rawHandler);
+            return await SendRequestAsync(conn) as byte[];
+        }
+
+
+
+        /// <summary>
         /// GET获取原始字节数组
         /// </summary>
         /// <param name="url"></param>
@@ -213,5 +276,33 @@ namespace Imprint.Network
             }
             return resp;
         }
+
+        /// <summary>
+        /// 异步请求
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="data"></param>
+        /// <returns></returns>
+        public async Task<Object> SendRequestAsync(WebConnection connection, Object data = null)
+        {
+            if (data != null)
+            {
+                connection.SetData(data);
+            }
+            var resp = await connection.SendRequestAsync();
+            if (resp != null)
+            {
+                lock (sync)
+                {
+                    // 请求成功, 累加cookie
+                    var respCookies = connection.ResponseCookie;
+
+                    Cookies.Add(respCookies);
+                }
+                ResponseHeader = connection.ResponseHeaders;
+            }
+            return resp;
+        }
+
     }
 }

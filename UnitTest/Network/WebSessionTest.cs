@@ -15,11 +15,16 @@ namespace UnitTest.Network
         WebSession session = new WebSession();
 
         [TestMethod]
-        public void TestGet()
+        public async System.Threading.Tasks.Task TestGet()
         {
+            var html = session.Get("http://time.tianqi.com/") as string;
             Assert.IsNotNull(
-                session.Get("https://www.baidu.com/")
+                html
             );
+            var html2 = await session.GetAsync("http://time.tianqi.com/") as string;
+
+           Assert.AreEqual(html.Substring(0,300), html2.Substring(0,300));
+           Assert.IsTrue(html.IndexOf("北京时间校准") != -1);
         }
 
         [TestMethod]

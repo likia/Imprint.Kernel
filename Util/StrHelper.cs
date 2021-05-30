@@ -24,6 +24,17 @@ public static class StrHelper
     }
 
     /// <summary>
+    /// 日期转换
+    /// </summary>
+    /// <param name="date"></param>
+    /// <param name="format"></param>
+    /// <returns></returns>
+    public static string DateToString(DateTime date, string format = "yyyy-MM-dd HH:mm:ss")
+    {
+        return date.ToString(format);
+    }
+
+    /// <summary>
     /// Url编码
     /// </summary>
     /// <param name="str"></param>

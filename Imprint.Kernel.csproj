@@ -23,6 +23,7 @@
     <WarningLevel>4</WarningLevel>
     <Prefer32Bit>false</Prefer32Bit>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <UseVSHostingProcess>false</UseVSHostingProcess>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -82,6 +83,7 @@
     <Compile Include="Imaging\EffImage.Extensions.cs" />
     <Compile Include="Imaging\EffImage.Static.cs" />
     <Compile Include="Imaging\Filter.cs" />
+    <Compile Include="Model\Result.cs" />
     <Compile Include="Network\Browser.cs" />
     <Compile Include="Network\Handler\GzipHandler.cs" />
     <Compile Include="Network\Handler.cs" />
@@ -90,6 +92,8 @@
     <Compile Include="Network\Handler\RawHandler.cs" />
     <Compile Include="Network\Redial\GeeRouter.cs" />
     <Compile Include="Network\Redial\Tor.cs" />
+    <Compile Include="Network\Tcp\Packet.cs" />
+    <Compile Include="Network\Tcp\TcpServer.cs" />
     <Compile Include="Network\UserAgent.cs" />
     <Compile Include="Network\WebConnection.cs" />
     <Compile Include="Network\WebSession.cs" />
@@ -123,8 +127,10 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Attribute\" />
     <Folder Include="Extension\" />
     <Folder Include="Trinity\Preprocessing\" />
+    <Folder Include="Web\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -51,7 +51,7 @@ namespace UnitTest.Task
         }
 
         [TestMethod]
-        public void Test()
+        public void TestEvent()
         {
             dispatcher.Append(new WebTimeJob()
             {

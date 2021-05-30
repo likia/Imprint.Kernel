@@ -10,6 +10,7 @@ using System.Collections.Specialized;
 using System.Collections;
 using System.Threading;
 using Imprint.Network.Handler;
+using System.Threading.Tasks;
 
 namespace Imprint.Network
 {
@@ -218,20 +219,8 @@ namespace Imprint.Network
             return this;
         }
 
-        /// <summary>
-        /// 启动异步请求
-        /// </summary>
-        /// <param name="Method"></param>
-        /// <param name="Data"></param>
-        /// <returns></returns>
-        public bool SendRequestAsync(RequestMethod Method, object Data)
-        {
-            Thread RequestThread = new Thread(new ThreadStart(SendRequestProxy));
-            SetMethod(Method);
-            SetData(Data);
-            RequestThread.Start();
-            return true;
-        }
+       
+  
 
         /// <summary>
         /// 发送请求
@@ -242,9 +231,84 @@ namespace Imprint.Network
             return SendRequest(ReqMethod, ReqObject);
         }
 
-        private void SendRequestProxy()
+        /// <summary>
+        /// 启动异步请求
+        /// </summary>
+        /// <param name="Method"></param>
+        /// <param name="Data"></param>
+        /// <returns></returns>
+        public async Task<Object> SendRequestAsync(RequestMethod? Method = null, object Data = null)
         {
-            SendRequest();
+            int retry_count = 1;
+            do
+            {
+                try
+                {
+                    Method = Method ?? ReqMethod;
+                    Data = Data ?? ReqObject;
+
+                    byte[] Body = null;
+                    if (Data != null)
+                    {
+                        Body = Processor.ObjectToData(Data);
+                    }
+                    BaseRequest.Method = Enum.GetName(typeof(RequestMethod), Method);
+                    BaseRequest.AllowAutoRedirect = AllowRedirect;
+                    BaseRequest.Expect = null;
+                    if (BaseRequest.CookieContainer == null)
+                    {
+                        // 初始化Cookies容器以获取返回的Cookie
+                        BaseRequest.CookieContainer = new CookieContainer();
+                    }
+                    BaseRequest.ServicePoint.Expect100Continue = false;
+                    BaseRequest.CachePolicy = new System.Net.Cache.HttpRequestCachePolicy(System.Net.Cache.HttpRequestCacheLevel.NoCacheNoStore);
+                    if (Body != null)
+                    {
+                        using (Stream RequestStream = BaseRequest.GetRequestStream())
+                        {
+                            await RequestStream.WriteAsync(Body, 0, Body.Length);
+                        }
+                    }
+                    HttpWebResponse Response = (HttpWebResponse)BaseRequest.GetResponse();
+                    LastResponse = Response;
+                    ResponseCookie = Response.Cookies;
+                    ResponseHeaders = new NameValueCollection();
+                    for (int i = 0; i < Response.Headers.Count; i++)
+                    {
+                        ResponseHeaders.Add(Response.Headers.Keys[i], Response.Headers[i]);
+                    }
+                    using (var ResponseStream = Response.GetResponseStream())
+                    {
+                        using (var Buffer = new MemoryStream())
+                        {
+                            int ReadLen = 0;
+                            byte[] Part = new byte[4096];
+                            while (true)
+                            {
+                                ReadLen = await ResponseStream.ReadAsync(Part, 0, 4096);
+                                if (ReadLen == 0) break;
+                                await Buffer.WriteAsync(Part, 0, ReadLen);
+                            }
+
+                            byte[] ResponseData = Buffer.ToArray();
+
+                            ResponseObject = Processor.DataToObject(ResponseData);
+                            LastError = null;
+                            RequestFinished?.Invoke(this);
+                            return ResponseObject;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LastError = "网络错误";
+                    ResponseHeaders = null;
+                    ResponseObject = null;
+                    await Task<Object>.Delay(500);
+                }
+            } while (retry_count++ <= Retry);
+
+            return null;
         }
 
         /// <summary>
@@ -304,10 +368,10 @@ namespace Imprint.Network
                     Stream ResponseStream = Response.GetResponseStream();
                     MemoryStream Buffer = new MemoryStream();
                     int ReadLen = 0;
-                    byte[] Part = new byte[409600];
+                    byte[] Part = new byte[4096];
                     while (true)
                     {
-                        ReadLen = ResponseStream.Read(Part, 0, 409600);
+                        ReadLen = ResponseStream.Read(Part, 0, 4096);
                         if (ReadLen == 0) break;
                         Buffer.Write(Part, 0, ReadLen);
                     }
