@@ -178,6 +178,7 @@ namespace Imprint.Network
                     item.Domain = GetDomain();
                 }
             }
+            BaseCookie.PerDomainCapacity = 255;
             BaseCookie.Add(Cookies);
             BaseRequest.CookieContainer = BaseCookie;            
             return this;
@@ -192,6 +193,7 @@ namespace Imprint.Network
         public WebConnection SetCookie(string Name, string Value)
         {
             CookieContainer BaseCookie = (BaseRequest.CookieContainer == null) ? new CookieContainer() : BaseRequest.CookieContainer;
+            BaseCookie.PerDomainCapacity = 255;
             BaseCookie.Add(new Cookie(Name, Value, "/", GetDomain()));
             BaseRequest.CookieContainer = BaseCookie;
             return this;
