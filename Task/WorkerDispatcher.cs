@@ -13,13 +13,16 @@ namespace Imprint.Task
     /// </summary>
     public class WorkerDispatcher
     {
+        /// <summary>
+        /// 同步锁
+        /// </summary>
+        private object syncLock = new object();
+
         private volatile ConcurrentQueue<WorkerJob> queue = new ConcurrentQueue<WorkerJob>();
 
         private volatile DispatcherState state = DispatcherState.IDLE;
 
         private Thread[] threads;
-
-        private DateTime lastExec = DateTime.MinValue;
 
         // 已结束任务的线程数量
         private volatile int exitedThread = 0;
@@ -38,15 +41,6 @@ namespace Imprint.Task
         /// 线程数
         /// </summary>
         public int ThreadCount
-        {
-            get;
-            private set;
-        }
-
-        /// <summary>
-        /// 间隔
-        /// </summary>
-        public int Interval
         {
             get;
             private set;
@@ -96,14 +90,13 @@ namespace Imprint.Task
         /// </summary>
         /// <param name="threadCount"></param>
         /// <param name="execInterv"></param>
-        public void Start(int threadCount, int execInterv)
+        public void Start(int threadCount)
         {
             if (state == DispatcherState.BUSY)
             {
                 return;
             }
             ThreadCount = threadCount;
-            Interval = execInterv;
             exitedThread = 0;
             state = DispatcherState.BUSY;
             threads = new Thread[threadCount];
@@ -147,25 +140,56 @@ namespace Imprint.Task
             state = DispatcherState.HALTING;
         }
 
-        void threadWork()
+       void threadWork()
         {
-            while(state == DispatcherState.BUSY)
+            while (state == DispatcherState.BUSY)
             {
-                if (Interval >= 1 && DateTime.Now.Subtract(lastExec).TotalMilliseconds < Interval)
+                if (queue.TryDequeue(out WorkerJob job))
                 {
-                    wait();
-                    continue;
-                }
-
-                if (!queue.IsEmpty && queue.TryDequeue(out WorkerJob job))
-                {
-                    if (job.Repeat == -1 || job.Repeat-- > 0)
+                    if (job.Interval > 0)
                     {
-                        queue.Enqueue(job);
+                        lock (syncLock)
+                        {
+                            var delta = (int)DateTime.Now.Subtract(job.LastExec).TotalMilliseconds;
+                            // 还没到执行的时候
+                            if (delta > 0 && delta < job.Interval)
+                            {
+                                Task<object>.Run(async () =>
+                                {
+                                    await Task<object>.Delay(job.Interval - delta);
+
+                                    queue.Enqueue(job);
+                                });
+                                continue;
+                            }
+                        }
                     }
-                    // 执行任务
-                    job.Run();
-                } 
+                    if (job.Interval > 0)
+                    {
+                        lock (syncLock)
+                        {
+                            job.LastExec = DateTime.Now;
+                        }
+                    }
+                    try
+                    {
+                        // 执行任务
+                        job.Run();
+                    }
+                    catch (Exception ex)
+                    {
+                    }
+                    finally
+                    {
+                        lock (syncLock)
+                        {
+                            if (job.Repeat == -1 || job.Repeat-- > 0)
+                            {
+                                queue.Enqueue(job);
+                            }
+                        }
+                    }
+                }
                 else
                 {
                     wait();

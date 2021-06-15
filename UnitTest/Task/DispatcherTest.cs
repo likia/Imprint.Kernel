@@ -46,7 +46,7 @@ namespace UnitTest.Task
         public void Init()
         {
             dispatcher = new WorkerDispatcher();
-            dispatcher.Start(10, 0);
+            dispatcher.Start(10);
             flag = false;
         }
 

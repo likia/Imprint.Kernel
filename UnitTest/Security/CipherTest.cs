@@ -289,6 +289,25 @@ GjdnSp9PTfFDBY133QIDAQAB";
         }
 
 
+        [TestMethod]
+        public void testAES()
+        {
+            var aes = RijndaelManaged.Create();
+            aes.BlockSize = 256;
+            aes.KeySize = 256;
+            aes.Padding = PaddingMode.Zeros;
+            aes.Mode = CipherMode.CBC;
+
+            aes.GenerateIV();
+            aes.GenerateKey();
+
+            var iv = Convert.ToBase64String(aes.IV);
+            var key = Convert.ToBase64String(aes.Key);
+
+            var init = $"{key}:{iv}";
+
+        }
+
 
         [TestMethod]
         public void testRSA()

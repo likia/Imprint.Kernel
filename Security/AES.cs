@@ -44,9 +44,9 @@ namespace Imprint.Security
                     using (var raw = new MemoryStream())
                     {
                         var readLen = 0;
-                        var readBuf = new byte[102400];
+                        var readBuf = new byte[1024];
 
-                        while ((readLen = encoder.Read(readBuf, 0, 102400)) != 0)
+                        while ((readLen = encoder.Read(readBuf, 0, 1024)) != 0)
                         {
                             raw.Write(readBuf, 0, readLen);
                         }
@@ -65,6 +65,7 @@ namespace Imprint.Security
             aes.KeySize = 256;
             aes.Padding = PaddingMode.Zeros;
             aes.Mode = CipherMode.CBC;
+            
             using (var ms = new MemoryStream())
             {
                 using (var encoder = new CryptoStream(ms, aes.CreateEncryptor(Key.Clone() as byte[], InitialVector.Clone() as byte[]), CryptoStreamMode.Write))
