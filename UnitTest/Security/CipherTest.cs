@@ -306,6 +306,14 @@ GjdnSp9PTfFDBY133QIDAQAB";
 
             var init = $"{key}:{iv}";
 
+            var myaes = new AES();
+            myaes.Init(init);
+
+            var rnd = StrHelper.RndString(1100);
+            Assert.AreEqual(
+                rnd,
+                myaes.Decrypt(myaes.Encrypt(rnd))
+            );
         }
 
 
