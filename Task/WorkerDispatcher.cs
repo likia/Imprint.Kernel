@@ -183,7 +183,7 @@ namespace Imprint.Task
                     {
                         lock (syncLock)
                         {
-                            if (job.Repeat == -1 || job.Repeat-- > 0)
+                            if (job.Repeat == -1 || (job.Repeat > 0 && job.Repeat-- > 0))
                             {
                                 queue.Enqueue(job);
                             }

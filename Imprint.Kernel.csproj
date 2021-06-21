@@ -63,6 +63,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Attributes\IOC\InjectAttribute.cs" />
+    <Compile Include="Attributes\IOC\ServiceAttribute.cs" />
     <Compile Include="Core\EventManager.cs" />
     <Compile Include="Core\ICipher.cs" />
     <Compile Include="Core\LogManager.cs" />
@@ -83,6 +85,7 @@
     <Compile Include="Imaging\EffImage.Extensions.cs" />
     <Compile Include="Imaging\EffImage.Static.cs" />
     <Compile Include="Imaging\Filter.cs" />
+    <Compile Include="IOC\Container.cs" />
     <Compile Include="Model\Result.cs" />
     <Compile Include="Network\Browser.cs" />
     <Compile Include="Network\Handler\GzipHandler.cs" />
@@ -127,7 +130,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Attribute\" />
     <Folder Include="Extension\" />
     <Folder Include="Trinity\Preprocessing\" />
     <Folder Include="Web\" />

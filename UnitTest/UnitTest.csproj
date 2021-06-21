@@ -55,6 +55,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Imaging\EffImageTest.cs" />
+    <Compile Include="IOC\ContainerTest.cs" />
     <Compile Include="Network\TcpTest.cs" />
     <Compile Include="Network\WebSessionTest.cs" />
     <Compile Include="Security\CipherTest.cs" />

@@ -11,11 +11,11 @@ namespace Imprint.Db
     /// <typeparam name="T"></typeparam>
     public interface IRepository<T>
     {
-        T Update<T>(T entity);
-        T Insert<T>(T entity);
-        void Delete<T>(T entity);
-        T Find<T>(params object[] keyValues);
-        List<T> FindAll<T>(Expression<Func<T, bool>> conditions = null);
-        PagedList<T> FindAllByPage<T, S>(Expression<Func<T, bool>> conditions, Expression<Func<T, S>> orderBy, int pageSize, int pageIndex);
+        T Update(T entity);
+        T Insert(T entity);
+        void Delete(T entity);
+        T Find(params object[] keyValues);
+        List<T> FindAll(Expression<Func<T, bool>> conditions = null);
+        PagedList<T> FindAllByPage<S>(Expression<Func<T, bool>> conditions, Expression<Func<T, S>> orderBy, int pageSize, int pageIndex);
     }
 }
