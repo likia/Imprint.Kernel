@@ -26,6 +26,9 @@ namespace UnitTest.IOC
             Assert.IsNotNull(container.Get<ServiceC>("svcC"));
             Assert.IsNotNull(container.Get<IServiceC>("svcC"));
 
+
+            var d = container.Get<ServiceD>();
+            d.test();
         }
 
     }
@@ -44,7 +47,10 @@ namespace UnitTest.IOC
 
     interface IServiceB { }
 
-    class ServiceB : IServiceB { }
+    class ServiceB : IServiceB
+    {
+       
+    }
 
     [Service]
     class Config
@@ -66,5 +72,16 @@ namespace UnitTest.IOC
     [Service]
     class ServiceD
     {
+        [Inject]
+        public IServiceA a { get; set; }
+
+        [Inject]
+        public IServiceA aa;
+
+        public void test()
+        {
+            Assert.IsNotNull(a);
+            Assert.IsNotNull(aa);
+        }
     }
 }

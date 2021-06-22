@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
+
+
 namespace Imprint.IOC
 {
     /// <summary>
@@ -24,6 +26,10 @@ namespace Imprint.IOC
         // 延迟注册bean队列
         Queue<Tuple<MethodInfo, Type, string>> beanQueue = new Queue<Tuple<MethodInfo, Type, string>>();
 
+        public Container()
+        {
+        }
+
         /// <summary>
         /// 扫描注解 注册服务
         /// </summary>
@@ -41,7 +47,7 @@ namespace Imprint.IOC
                     var attr = type.GetCustomAttribute<ServiceAttribute>(true);
                     // 注册type
                     var interfaces = type.GetInterfaces();
-                    if (interfaces.Length>0)
+                    if (interfaces.Length > 0)
                     {
                         if (attr.Name != "")
                         {
@@ -54,7 +60,7 @@ namespace Imprint.IOC
                         {
                             Set(type, _interface);
                         }
-                    } 
+                    }
                     else
                     {
                         Set(type, null, attr.Name);
@@ -74,26 +80,17 @@ namespace Imprint.IOC
                             var name = !string.IsNullOrEmpty(mattr.Name) ?
                                       mattr.Name : method.Name;
 
-                            beanQueue.Enqueue((method, type, name).ToTuple());                                            
+                            beanQueue.Enqueue((method, type, name).ToTuple());
                         }
                     }
                 }
             }
 
             // 注册bean
-            while(beanQueue.Count>0)
+            while (beanQueue.Count > 0)
             {
                 var (method, type, name) = beanQueue.Dequeue();
                 registerBean(method, type, name);
-            }
-
-            // 最后处理依赖注入
-            while (injectQueue.Count > 0)
-            {
-                var (type, obj) = injectQueue.Dequeue();
-
-                propertyInject(type, obj);
-                fieldInject(type, obj);
             }
         }
 
@@ -239,14 +236,15 @@ namespace Imprint.IOC
         protected object containerNew(Type type)
         {
             // 选择无参数造函数
-            object obj = null;
-            obj = Activator.CreateInstance(type);
+            object obj = Activator.CreateInstance(type);
 
             // 最后操作
             injectQueue.Enqueue((type, obj).ToTuple());
 
-            return obj;
+            propertyInject(type, obj);
+            fieldInject(type, obj);
 
+            return obj;
         }
 
 
@@ -263,7 +261,7 @@ namespace Imprint.IOC
                  .ToList();
             foreach (var item in propList)
             {
-                var ptype = item.GetType();
+                var ptype = item.PropertyType;
                 var pattr = item.GetCustomAttributes(typeof(InjectAttribute), true)
                                 .First() as InjectAttribute;
                 item.SetValue(instance, Get(ptype, pattr.Name));
@@ -283,7 +281,7 @@ namespace Imprint.IOC
                 .ToArray();
             foreach (var item in fieldList)
             {
-                var ftype = item.GetType();
+                var ftype = item.FieldType;
                 var fattr = item.GetCustomAttributes(typeof(InjectAttribute), true)
                                 .First() as InjectAttribute;
 

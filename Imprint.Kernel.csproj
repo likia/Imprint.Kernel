@@ -108,7 +108,6 @@
     <Compile Include="Security\SecureHash.cs" />
     <Compile Include="Task\Dispatcher.cs" />
     <Compile Include="Task\WorkerDispatcher.cs" />
-    <Compile Include="Task\Ticker.cs" />
     <Compile Include="Task\WorkerJob.cs" />
     <Compile Include="Trinity\Model\ActivationFunction.cs" />
     <Compile Include="Trinity\Model\Connection.cs" />
