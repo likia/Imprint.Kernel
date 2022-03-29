@@ -34,5 +34,15 @@ namespace Imprint.Model
         /// </summary>
         [JsonProperty("success")]
         public bool Success { get; set; }
+
+        public static Result<T> Succeed(string msg = "", int code = 200, T data = default)
+        {
+            return new Result<T>() { Success = true, Code = code, Data = data, Message = msg };
+        }
+
+        public static Result<T> Failed(string msg = "", int code = -1, T data = default)
+        {
+            return new Result<T>() { Success = false, Code = code, Data = data, Message = msg };
+        }
     }
 }

@@ -7,6 +7,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Imprint.Kernel", "Imprint.K
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "UnitTest", "UnitTest\UnitTest.csproj", "{ACA33469-DB34-46CB-9E21-BF232ECA08E3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Imprint.Web", "..\Imprint.Web\Imprint.Web.csproj", "{8D992AB3-CAA6-48B4-9D35-AA24CF7A70F9}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{ACA33469-DB34-46CB-9E21-BF232ECA08E3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{ACA33469-DB34-46CB-9E21-BF232ECA08E3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{ACA33469-DB34-46CB-9E21-BF232ECA08E3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D992AB3-CAA6-48B4-9D35-AA24CF7A70F9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D992AB3-CAA6-48B4-9D35-AA24CF7A70F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D992AB3-CAA6-48B4-9D35-AA24CF7A70F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D992AB3-CAA6-48B4-9D35-AA24CF7A70F9}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

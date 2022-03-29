@@ -14,6 +14,16 @@ namespace UnitTest.Network
     {
         WebSession session = new WebSession();
 
+
+        [TestMethod]
+        public void TestCookie()
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                session.Get("http://4cat.org/im/91/test.php");
+            }
+        }
+
         [TestMethod]
         public async System.Threading.Tasks.Task TestGet()
         {
